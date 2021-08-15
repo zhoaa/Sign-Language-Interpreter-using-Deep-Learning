@@ -67,7 +67,7 @@ def train():
 
 	model, callbacks_list = cnn_model()
 	model.summary()
-	model.fit(train_images, train_labels, validation_data=(val_images, val_labels), epochs=15, batch_size=500, callbacks=callbacks_list)
+	model.fit(train_images, train_labels, validation_data=(val_images, val_labels), epochs=15, batch_size=1000, callbacks=callbacks_list)
 	scores = model.evaluate(val_images, val_labels, verbose=0)
 	print("CNN Error: %.2f%%" % (100-scores[1]*100))
 	#model.save('cnn_model_keras2.h5')

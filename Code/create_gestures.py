@@ -41,9 +41,9 @@ def store_in_db(g_id, g_name):
 def store_images(g_id):
 	total_pics = 1200
 	hist = get_hand_hist()
-	cam = cv2.VideoCapture(1)
+	cam = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 	if cam.read()[0]==False:
-		cam = cv2.VideoCapture(0)
+		cam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 	x, y, w, h = 300, 100, 300, 300
 
 	create_folder("gestures/"+str(g_id))
@@ -64,25 +64,25 @@ def store_images(g_id):
 		thresh = cv2.merge((thresh,thresh,thresh))
 		thresh = cv2.cvtColor(thresh, cv2.COLOR_BGR2GRAY)
 		thresh = thresh[y:y+h, x:x+w]
-		contours = cv2.findContours(thresh.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[1]
+		contours = cv2.findContours(thresh.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[0]
 
 		if len(contours) > 0:
 			contour = max(contours, key = cv2.contourArea)
 			if cv2.contourArea(contour) > 10000 and frames > 50:
 				x1, y1, w1, h1 = cv2.boundingRect(contour)
 				pic_no += 1
-				save_img = thresh[y1:y1+h1, x1:x1+w1]
+				save_img = thresh
 				if w1 > h1:
-					save_img = cv2.copyMakeBorder(save_img, int((w1-h1)/2) , int((w1-h1)/2) , 0, 0, cv2.BORDER_CONSTANT, (0, 0, 0))
+					save_img = thresh
 				elif h1 > w1:
-					save_img = cv2.copyMakeBorder(save_img, 0, 0, int((h1-w1)/2) , int((h1-w1)/2) , cv2.BORDER_CONSTANT, (0, 0, 0))
+					save_img = thresh
 				save_img = cv2.resize(save_img, (image_x, image_y))
 				rand = random.randint(0, 10)
 				if rand % 2 == 0:
 					save_img = cv2.flip(save_img, 1)
 				cv2.putText(img, "Capturing...", (30, 60), cv2.FONT_HERSHEY_TRIPLEX, 2, (127, 255, 255))
 				cv2.imwrite("gestures/"+str(g_id)+"/"+str(pic_no)+".jpg", save_img)
-
+		
 		cv2.rectangle(img, (x,y), (x+w, y+h), (0,255,0), 2)
 		cv2.putText(img, str(pic_no), (30, 400), cv2.FONT_HERSHEY_TRIPLEX, 1.5, (127, 127, 255))
 		cv2.imshow("Capturing gesture", img)

@@ -1,8 +1,9 @@
 import cv2, pickle
 import numpy as np
 import tensorflow as tf
-from cnn_tf import cnn_model_fn
 import os
+import time
+
 import sqlite3, pyttsx3
 from keras.models import load_model
 from threading import Thread
@@ -85,7 +86,7 @@ def get_operator(pred_text):
 
 hist = get_hand_hist()
 x, y, w, h = 300, 100, 300, 300
-is_voice_on = True
+is_voice_on = False
 
 def get_img_contour_thresh(img):
 	img = cv2.flip(img, 1)
@@ -237,7 +238,12 @@ def calculator_mode(cam):
 def text_mode(cam):
 	global is_voice_on
 	text = ""
+	firstframe = False
+	secondframe = False
+	lastframe = False
 	word = ""
+	t0 = 0
+	t1 = 0
 	count_same_frame = 0
 	while True:
 		img = cam.read()[1]
@@ -279,12 +285,30 @@ def text_mode(cam):
 			word = ""
 		blackboard = np.zeros((480, 640, 3), dtype=np.uint8)
 		cv2.putText(blackboard, " ", (180, 50), cv2.FONT_HERSHEY_TRIPLEX, 1.5, (255, 0,0))
-		cv2.putText(blackboard, "Predicted text- " + text, (30, 100), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 0))
-		cv2.putText(blackboard, word, (30, 240), cv2.FONT_HERSHEY_TRIPLEX, 2, (255, 255, 255))
-		if is_voice_on:
-			cv2.putText(blackboard, " ", (450, 440), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 127, 0))
+		#cv2.putText(blackboard, "Sign 'NO'", (30, 100), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 0))
+		
+		if secondframe and text == 'no_follow':
+			t1 = time.time()
+			cv2.putText(blackboard, "NICE SIGN! That took: " + str(t1-t0) + "seconds", (30, 100), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 0))
+			time.sleep(0.5)
+			time.sleep(5)
+			lastframe = True
+		elif firstframe:
+			cv2.putText(blackboard, "Almost...", (30, 100), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 0))
+			secondframe = True
+			firstframe = False
+		elif lastframe:
+			cv2.putText(blackboard, "Sign 'AGAIN'", (30, 100), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 0))
 		else:
-			cv2.putText(blackboard, " ", (450, 440), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 127, 0))
+			cv2.putText(blackboard, "Sign 'NO'", (30, 100), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 0))
+		
+
+		
+		if text == 'no':
+			firstframe = True
+			t0 = time.time()
+		
+		#cv2.putText(blackboard, word, (30, 240), cv2.FONT_HERSHEY_TRIPLEX, 2, (255, 255, 255))
 		cv2.rectangle(img, (x,y), (x+w, y+h), (0,255,0), 2)
 		res = np.hstack((img, blackboard))
 		cv2.imshow("Recognizing gesture", res)
@@ -303,9 +327,9 @@ def text_mode(cam):
 		return 0
 
 def recognize():
-	cam = cv2.VideoCapture(1)
+	cam = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 	if cam.read()[0]==False:
-		cam = cv2.VideoCapture(0)
+		cam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 	text = ""
 	word = ""
 	count_same_frame = 0
